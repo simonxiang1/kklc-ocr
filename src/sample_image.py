@@ -16,4 +16,4 @@ text_y = (448 - (text_size[3] - text_size[1])) // 2
 draw.text((text_x, text_y), text, fill="black", font=font)
 
 # Save or display
-img.save("inputs/kanji_image.jpg")
+img.save("../data/kanji_image.jpg")
