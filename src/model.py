@@ -31,5 +31,9 @@ class KKLC_OCR:
     def process_image(self, image_path):
         image = Image.open(image_path)
         pixel_values = self.transform(image).unsqueeze(0)
-        question = '<image>\nWhat text do you see in this image?'
+        question = """<image>
+        What text do you see in this image? 
+        Respond with only the text.
+        Read the kanji characters in their Japanese form (not simplified Chinese).
+        """
         return self.model.chat(self.tokenizer, pixel_values, question, dict(max_new_tokens=1024))
