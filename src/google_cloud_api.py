@@ -1,5 +1,4 @@
 from google.cloud import vision
-import os
 from pdf2image import convert_from_path
 import io
 
@@ -47,7 +46,6 @@ def process_scanned_pdf(pdf_path, output_path):
                 if texts:
                     # The first text_annotation contains all text in reading order
                     page_text = texts[0].description
-                    output_file.write(f"\n=== Page {page_num} ===\n")
                     output_file.write(page_text)
                     output_file.write('\n')
                     print(f"Successfully processed page {page_num}")
