@@ -1,21 +1,14 @@
-from src.model import KKLC_OCR
-from src.sample_image import create_sample_image
+from src.google_cloud_api import process_scanned_pdf
+import os
 
 def main():
     print("Hello from KKLC-OCR!")
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/Users/simon/coding/mimetic-fulcrum-450000-u4-b833a522c287.json'
 
-    # creating sample images
-    font_path = "/Users/simon/Library/Fonts/Hiragana-Mincho-ProN.ttc"
-    save_path = "/Users/simon/coding/KKLC_OCR/data/"
-    im1 = save_path + "kanji.jpg"
-    im2 = save_path + "stitch.jpg"
-    create_sample_image(im1, "漢字", font_path, 488, 488)
-    create_sample_image(im2, "縫う", font_path, 488, 488)
-
-    # initializing model
-    ocr = KKLC_OCR()  
-    print(ocr.process_image(im1))
-    print(ocr.process_image(im2))
+    process_scanned_pdf(
+        "data/kklc_page.pdf",
+        "outputs/page_output.txt"
+    ) 
 
 
 if __name__ == "__main__":
