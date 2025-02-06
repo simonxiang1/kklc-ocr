@@ -1,5 +1,6 @@
-from src.google_cloud_api import process_scanned_pdf
 import os
+from src.ocr import gemini_pdf_ocr
+
 
 def main():
     print("Hello from KKLC-OCR!")
@@ -9,6 +10,7 @@ def main():
     #     "data/kklc_page.pdf",
     #     "outputs/page_output.txt"
     # ) 
+
 
 
 if __name__ == "__main__":
