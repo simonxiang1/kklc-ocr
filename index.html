@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Kanji Search</title>
+    <style>
+        body { 
+            max-width: 800px; 
+            margin: 20px auto; 
+            padding: 0 20px; 
+            font-family: system-ui;
+        }
+        input {
+            width: calc(100% - 16px);
+            padding: 8px;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        .card {
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            background: white;
+        }
+        .kanji {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .keywords {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .meta {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <input type="text" placeholder="Search by kanji or ID..." id="search">
+    <div id="result"></div>
+
+    <script>
+        let kanjiData = {};
+
+        // load the JSON file
+        fetch('data.json')
+            .then(response => response.json())
+            .then(data => {
+                kanjiData = data;
+                console.log('Data loaded');
+            });
+
+        // search handling
+        document.getElementById('search').addEventListener('input', (e) => {
+            const query = e.target.value;
+            const result = kanjiData[query] || 
+                          Object.values(kanjiData).find(k => k.id === query);
+            
+            const resultDiv = document.getElementById('result');
+            if (result) {
+                resultDiv.innerHTML = `
+                    <div class="card">
+                        <div class="kanji">${result.kanji}</div>
+                        <div class="keywords">${result.keywords}</div>
+                        <div class="mnemonic">${result.mnemonic}</div>
+                        <div class="meta">ID: ${result.id} | Page: ${result.page}</div>
+                    </div>`;
+            } else {
+                resultDiv.innerHTML = '';
+            }
+        });
+    </script>
+</body>
+</html>

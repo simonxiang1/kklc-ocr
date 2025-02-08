@@ -1,5 +1,4 @@
 import time
-import json
 import os
 from src.ocr import convert_pdf_to_jpg, find_jpg_files, gemini_pdf_ocr
 from src.post_processing import clean_jsonl, read_dbjs, read_jsonl, merge_jsonl_and_db
