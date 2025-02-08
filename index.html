@@ -9,6 +9,7 @@
             margin: 20px auto; 
             padding: 0 20px; 
             font-family: system-ui;
+            background: #FFFAFA;
         }
         input {
             width: calc(100% - 16px);
@@ -19,8 +20,9 @@
         .card {
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             background: white;
+            margin-bottom: 20px;
         }
         .kanji {
             font-size: 2.5em;
@@ -28,23 +30,27 @@
         }
         .keywords {
             font-weight: bold;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .mnemonic {
+            margin-bottom: 15px;
+            line-height: 1.5;
         }
         .meta {
             color: #666;
             font-size: 0.9em;
-            margin-top: 10px;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
         }
     </style>
 </head>
 <body>
-    <input type="text" placeholder="Search by kanji or ID..." id="search">
+    <input type="text" placeholder="Search by kanji, IDs, or keywords..." id="search">
     <div id="result"></div>
 
     <script>
         let kanjiData = {};
 
-        // load the JSON file
         fetch('data.json')
             .then(response => response.json())
             .then(data => {
@@ -52,23 +58,65 @@
                 console.log('Data loaded');
             });
 
-        // search handling
+        function parseQuery(query) {
+            query = query.trim();
+            
+            // check if it's a number-only query (IDs)
+            const numberQuery = query.split(/[,\s]+/).filter(q => q);
+            if (numberQuery.every(q => /^\d+$/.test(q))) {
+                return { type: 'ids', values: numberQuery };
+            }
+
+            // check if it's kanji characters
+            if (/[\u4e00-\u9faf]/.test(query)) {
+                return { type: 'kanji', values: query.split('') };
+            }
+
+            // default to keyword search
+            return { type: 'keyword', values: [query.toLowerCase()] };
+        }
+
         document.getElementById('search').addEventListener('input', (e) => {
             const query = e.target.value;
-            const result = kanjiData[query] || 
-                          Object.values(kanjiData).find(k => k.id === query);
-            
             const resultDiv = document.getElementById('result');
-            if (result) {
-                resultDiv.innerHTML = `
-                    <div class="card">
-                        <div class="kanji">${result.kanji}</div>
-                        <div class="keywords">${result.keywords}</div>
-                        <div class="mnemonic">${result.mnemonic}</div>
-                        <div class="meta">ID: ${result.id} | Page: ${result.page}</div>
-                    </div>`;
-            } else {
+            
+            if (!query) {
                 resultDiv.innerHTML = '';
+                return;
+            }
+
+            const searchParams = parseQuery(query);
+            let matches = [];
+
+            switch (searchParams.type) {
+                case 'ids':
+                    matches = Object.values(kanjiData).filter(entry => 
+                        searchParams.values.includes(entry.id)
+                    );
+                    break;
+                
+                case 'kanji':
+                    matches = searchParams.values.map(k => kanjiData[k]).filter(Boolean);
+                    break;
+                
+                case 'keyword':
+                    matches = Object.values(kanjiData).filter(entry => 
+                        entry.keywords.toLowerCase().includes(searchParams.values[0])
+                    );
+                    break;
+            }
+
+            resultDiv.innerHTML = matches.map(result => `
+                <div class="card">
+                    <div class="kanji">${result.kanji}</div>
+                    <div class="keywords">${result.keywords}</div>
+                    <div class="mnemonic">${result.mnemonic}</div>
+                    <div class="meta">ID: ${result.id} | Page: ${result.page}</div>
+                </div>
+            `).join('');
+
+            if (matches.length === 0) {
+                resultDiv.innerHTML = '<div class="card">No matches found</div>';
             }
         });
     </script>
