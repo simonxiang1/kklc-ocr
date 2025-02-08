@@ -1,9 +1,6 @@
 import os
 import glob
-import re
 import time
-import json
-
 from pathlib import Path
 from pdf2image import convert_from_path
 
@@ -15,12 +12,12 @@ def convert_pdf_to_jpg(pdf_path: str, output_dir: str, dpi: int = 300) -> list[s
     Convert a PDF file to JPG images, one per page.
     
     Args:
-        pdf_path: Path to the PDF file
-        output_dir: Directory to save the JPG files
-        dpi: Resolution for the output images (default 300)
+        pdf_path (str): Path to the PDF file
+        output_dir (str): Directory to save the JPG files
+        dpi (int): Resolution for the output images (default 300)
     
     Returns:
-        List of paths to the generated JPG files
+        list[str]: List of paths to the generated JPG files
     """
 
     # validate input path
@@ -73,7 +70,7 @@ def find_jpg_files(dir: str) -> list[str]:
         directory (str): Path to the directory to search
         
     Returns:
-        list: List of paths to .jpg files
+        list[str]: List of paths to .jpg files
     """
     # search using glob on pattern
     pattern = os.path.join(dir, "*.jpg")
@@ -85,11 +82,11 @@ def gemini_pdf_ocr(image_path: str, write_path: str) -> str:
     Makes an API call to Gemini 2.0 Flash to transcribe the text.
         
     Args:
-        image_path: Path to the image to be transcribed.
-        write_path: Path to the file where transcriptions will be stored.
+        image_path (str): Path to the image to be transcribed.
+        write_path (str): Path to the file where transcriptions will be stored.
 
     Returns:
-        Returns the file name write_path.
+        str: The write path of the content.
     """
 
     PROJECT_ID = "mimetic-fulcrum-450000-u4"
@@ -135,46 +132,3 @@ def gemini_pdf_ocr(image_path: str, write_path: str) -> str:
 
     # returns write path
     return write_path
-
-
-def clean_jsonl(input_file: str, output_file: str) -> None:
-    """
-    Clean a JSONL file by fixing common issues:
-    1. Ensure each JSON object is on its own line.
-    2. Remove stray markdown tags.
-    3. Correctly escape only incorrect quotes in the "mnemonic" field.
-
-    Args:
-        input_file (str): Path to input JSONL file.
-        output_file (str): Path to output JSONL file.
-
-    Returns:
-        None
-    """
-    with open(input_file, "r", encoding="utf-8") as infile, open(output_file, "w", encoding="utf-8") as outfile:
-        data = infile.read()
-        
-        # ensure each JSON object is on its own line
-        data = data.replace('}{', '}\n{')  # Insert newline between JSON objects
-        
-        # remove stray markdown tags
-        data = re.sub(r'```json', '', data)
-        data = re.sub(r'```', '', data)
-        
-        for line in data.splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            
-            try:
-                obj = json.loads(line)
-                
-                # fix unescaped quotes in the "mnemonic" field without double escaping
-                if "mnemonic" in obj:
-                    obj["mnemonic"] = re.sub(r'(?<!\\)"', '\\"', obj["mnemonic"])  # escape only incorrect quotes
-                    obj["mnemonic"] = obj["mnemonic"].replace('\\', '')  # remove double-escaped backslashes
-
-                
-                outfile.write(json.dumps(obj, ensure_ascii=False) + "\n")
-            except json.JSONDecodeError:
-                continue  # skip invalid JSON lines
