@@ -64,7 +64,7 @@ var database = {
       "meaning":"CIRCLE, YEN",
       "id":"13"
    },
-   "○":{
+   "〇":{
       "page":"36",
       "meaning":"ZERO, CIRCLE MARK",
       "id":"14"

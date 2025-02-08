@@ -5,10 +5,10 @@ import time
 import json
 
 from pathlib import Path
-from dotenv import load_dotenv
-from PIL import Image
 from pdf2image import convert_from_path
-from google import genai
+
+import vertexai
+from vertexai.generative_models import GenerativeModel, Part
 
 def convert_pdf_to_jpg(pdf_path: str, output_dir: str, dpi: int = 300) -> list[str]:
     """
@@ -92,13 +92,11 @@ def gemini_pdf_ocr(image_path: str, write_path: str) -> str:
         Returns the file name write_path.
     """
 
-    # initialize environment vars, client
-    load_dotenv()
-    key = os.environ.get('GEMINI_API_KEY')
-    client = genai.Client(api_key=key)
+    PROJECT_ID = "mimetic-fulcrum-450000-u4"
+    vertexai.init(project=PROJECT_ID, location="us-central1")
+    model = GenerativeModel("gemini-2.0-flash-001")
 
     # send data to gemini
-    image = Image.open(image_path)
     prompt = (
         "Please transcribe this page from a bilingual Japanese-English document as you see it."
         "This document contains entries and definitions for kanji characters: for each entry, "
@@ -116,14 +114,16 @@ def gemini_pdf_ocr(image_path: str, write_path: str) -> str:
         "For example, if you see a man radical 亻 or a sword radical 刂, transcribe them "
         "exactly with their proper Unicode characters, not as letters or approximations. "
     )
+    # helper function to format the image
+    def image_to_part(image_path):
+        with open(image_path, 'rb') as f:
+            image_data = f.read()
+        return Part.from_data(data=image_data, mime_type="image/jpeg")
     
     # calling on gemini to transcribe the image
     print(f"Received image {image_path}. Transcribing content...")
     start = time.time()
-    response = client.models.generate_content(
-        model="gemini-2.0-flash",
-        contents=[image, prompt]
-    )
+    response = model.generate_content(contents=[image_to_part(image_path), prompt])
     end = time.time()
 
     # makes write file if it doesn't exist, then writes transcriptions to it
@@ -137,7 +137,7 @@ def gemini_pdf_ocr(image_path: str, write_path: str) -> str:
     return write_path
 
 
-def clean_jsonl(input_file, output_file):
+def clean_jsonl(input_file: str, output_file: str) -> None:
     """
     Clean a JSONL file by fixing common issues:
     1. Ensure each JSON object is on its own line.
@@ -147,16 +147,19 @@ def clean_jsonl(input_file, output_file):
     Args:
         input_file (str): Path to input JSONL file.
         output_file (str): Path to output JSONL file.
+
+    Returns:
+        None
     """
     with open(input_file, "r", encoding="utf-8") as infile, open(output_file, "w", encoding="utf-8") as outfile:
         data = infile.read()
         
-        # Ensure each JSON object is on its own line
+        # ensure each JSON object is on its own line
         data = data.replace('}{', '}\n{')  # Insert newline between JSON objects
         
-        # Remove stray markdown tags
+        # remove stray markdown tags
         data = re.sub(r'```json', '', data)
-        data = re.sub(r'```json', '', data)
+        data = re.sub(r'```', '', data)
         
         for line in data.splitlines():
             line = line.strip()
@@ -166,12 +169,12 @@ def clean_jsonl(input_file, output_file):
             try:
                 obj = json.loads(line)
                 
-                # Fix unescaped quotes in the "mnemonic" field without double escaping
+                # fix unescaped quotes in the "mnemonic" field without double escaping
                 if "mnemonic" in obj:
-                    obj["mnemonic"] = re.sub(r'(?<!\\)"', '\\"', obj["mnemonic"])  # Escape only incorrect quotes
-                    obj["mnemonic"] = obj["mnemonic"].replace('\\', '')  # Remove double-escaped backslashes
+                    obj["mnemonic"] = re.sub(r'(?<!\\)"', '\\"', obj["mnemonic"])  # escape only incorrect quotes
+                    obj["mnemonic"] = obj["mnemonic"].replace('\\', '')  # remove double-escaped backslashes
 
                 
                 outfile.write(json.dumps(obj, ensure_ascii=False) + "\n")
             except json.JSONDecodeError:
-                continue  # Skip invalid JSON lines
+                continue  # skip invalid JSON lines
