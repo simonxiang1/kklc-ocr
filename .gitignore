@@ -11,5 +11,5 @@ wheels/
 .env
 
 # Outputs
-outputs
-processed
+backend/outputs
+backend/processed
