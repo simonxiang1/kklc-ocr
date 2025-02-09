@@ -1,8 +1,5 @@
 # KKLC OCR
 
-TODO fill out
+A search site for the entries of KKLC, most notably including mnemonics. You can enter either multiple kanji, comma/space separated IDs (entry numbers), or search by keywords.
 
-- search by Kanji entry (paste as many as you want)
-- search by entry number (separated by commas)
-- pull up items in boxes
-- have a copy button to copy entries
+The source code for the transcription process lives here too - namely API calls to `gemini-flash-2.0` and some prompt engineering.
