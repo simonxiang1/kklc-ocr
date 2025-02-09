@@ -5,10 +5,11 @@ build/
 dist/
 wheels/
 *.egg-info
+.DS_store
 
 # Virtual environments
-.venv
-.env
+*.venv
+*.env
 
 # Outputs
 backend/outputs
