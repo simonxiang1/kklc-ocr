@@ -7,7 +7,7 @@ from pdf2image import convert_from_path
 import vertexai
 from vertexai.generative_models import GenerativeModel, Part
 
-def convert_pdf_to_jpg(pdf_path: str, output_dir: str, dpi: int = 300) -> list[str]:
+def convert_pdf_to_jpg(pdf_path: str, output_dir: str, dpi: int = 400) -> list[str]:
     """
     Convert a PDF file to JPG images, one per page.
     
@@ -132,3 +132,39 @@ def gemini_pdf_ocr(image_path: str, write_path: str) -> str:
 
     # returns write path
     return write_path
+
+def run_ocr_pipeline(
+        kklc_entries_path: str, 
+        output_folder_path: str,
+        output_file_path: str,
+        dpi: int = 400
+    ) -> None:
+    """
+    Runs the entire OCR pipeline from start to finish (~30 min).
+    Make sure you're authenticated with Google Cloud.
+    Requires a PDF copy of KKLC to live at `kklc_entries_path`. (Ideally just the entry pages.)
+    Writes all data to a JSONL file at `output_file_path`. 
+    The data will be messy (~0.5-1% will error), which will require some manual cleaning. 
+
+    Args:
+        kklc_entries_path (str): Path to the PDF file containing all KKLC entries.
+        output_folder_path (str): Path to the folder where the PDF -> image conversions should live.
+        output_file_path (str): Path to the file where the post OCR JSONL should live.
+        dpi (int): The resolution of the image ouputs from PDF -> image conversions.
+
+    Returns:
+        None
+    """
+    start = time.time()
+
+    # converting images
+    image_paths = convert_pdf_to_jpg(kklc_entries_path, output_folder_path, dpi)
+    
+    # sends each image to gemini and writes to output_file_path
+    for image_path in image_paths:
+        gemini_pdf_ocr(image_path, output_file_path)
+    end = time.time()
+
+    print(f"Done in {(end-start)/60:0.02f} minutes.")
+
+    return

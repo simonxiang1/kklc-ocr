@@ -1,31 +1,20 @@
-import time
-import os
-from src.ocr import convert_pdf_to_jpg, find_jpg_files, gemini_pdf_ocr
-from src.post_processing import clean_jsonl, read_dbjs, read_jsonl, merge_jsonl_and_db
+from src.ocr import run_ocr_pipeline
+from src.post_processing import run_data_cleaning_pipeline
 
 def main():
     print("Hello from KKLC-OCR!")
 
-    # start = time.time()
-    # # image_paths = convert_pdf_to_jpg("data/kklc_entries.pdf", "outputs", dpi=400)
-    # image_paths = find_jpg_files("outputs")
+    # uncomment to run the full OCR pipeline: takes about ~30 minutes.
+    # run_ocr_pipeline("data/kklc_entries.pdf", "outputs", "outputs/kanji_entries.jsonl")
     
-    # for image_path in image_paths:
-    #     gemini_pdf_ocr(image_path, "outputs/kanji_entries.jsonl")
+    # data cleaning pipeline
+    run_data_cleaning_pipeline(
+        ocr_jsonl="outputs/kanji_entries.jsonl",
+        source_db="data/db.js",
+        output_path="data/complete_kanji_db.json",
+    )
 
-    # end = time.time()
-    # print(f"Done in {(end-start)/60:0.02f} minutes.")
-    
-    # data cleaning
-    print(f"Cleaning data...")
-    clean_jsonl(input_file="outputs/kanji_entries.jsonl", output_file="data/clean_kanji.jsonl")
-    print("Done!")
-
-    # merging dbs 
-    db_data = read_dbjs("data/db.js")
-    jsonl_data = read_jsonl("data/clean_kanji.jsonl")
-    _ = merge_jsonl_and_db(jsonl_data, db_data, "data/complete_kanji_db.json")
-    os.remove("data/clean_kanji.jsonl")
+    print("All done!")
 
 if __name__ == "__main__":
     main()
