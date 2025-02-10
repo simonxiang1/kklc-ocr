@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script defer src="https://cloud.umami.is/script.js" data-website-id="03f21e1b-cd01-4174-823e-67624031a681"></script>
     <title>KKLC Lookup</title>
     <style>
         html, body { 
@@ -86,6 +85,17 @@
         .kanji {
             font-size: min(2.5em, 10vw);
             margin-bottom: 10px;
+        }
+        .readings {
+            float: right;
+            color: #666;
+            font-size: min(0.9em, 4vw);
+            margin-left: 15px;
+            text-align: right;
+            line-height: 1.5;
+        }
+        .readings span {
+            color: #b5b5b5;
         }
         .keywords {
             font-weight: bold;
@@ -209,10 +219,14 @@
 
             const resultsHTML = displayedMatches.map(result => `
                 <div class="card">
+                    <div class="readings">
+                        <div><span>音: </span>シャン, ショウ, ジョウ</div>
+                        <div><span>訓: </span>-あ.がり, -あ.がる, -あ.げる, ...</div>
+                    </div>
                     <div class="kanji">${result.kanji}</div>
                     <div class="keywords">${result.keywords}</div>
                     <div class="mnemonic">${result.mnemonic}</div>
-                    <div class="meta">ID: ${result.id} | Page: ${result.page}</div>
+                    <div class="meta">ID: ${result.id} | Page: ${result.page} | JLPT: N1</div>
                 </div>
             `).join('');
 

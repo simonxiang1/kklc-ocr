@@ -18,7 +18,7 @@ def main():
     
     # data cleaning
     print(f"Cleaning data...")
-    clean_jsonl("outputs/kanji_entries.jsonl", "data/clean_kanji.jsonl")
+    clean_jsonl(input_file="outputs/kanji_entries.jsonl", output_file="data/clean_kanji.jsonl")
     print("Done!")
 
     # merging dbs 
