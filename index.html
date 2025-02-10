@@ -201,6 +201,20 @@
             return { type: 'keyword', values: [query.toLowerCase()] };
         }
 
+        // format readings (show at most 3)
+        function formatReadings(readings) {
+            if (!Array.isArray(readings)) return 'None'
+            const displayReadings = readings.slice(0, 3);
+            const hasMore = readings.length > 3;
+            
+            return displayReadings.join(', ') + (hasMore ? ', ...' : '');
+        }
+
+        // format JLPT level (none if none)
+        function formatJLPT(level) {
+            return level ? `N${level}` : 'N/A';
+        }
+
         // display paginated results
         function displayResults(matches, reset = false) {
             const resultDiv = document.getElementById('result');
@@ -220,13 +234,13 @@
             const resultsHTML = displayedMatches.map(result => `
                 <div class="card">
                     <div class="readings">
-                        <div><span>音: </span>シャン, ショウ, ジョウ</div>
-                        <div><span>訓: </span>-あ.がり, -あ.がる, -あ.げる, ...</div>
+                        <div><span>音: </span>${formatReadings(result.on_readings)}</div>
+                        <div><span>訓: </span>${formatReadings(result.kun_readings)}</div>
                     </div>
                     <div class="kanji">${result.kanji}</div>
                     <div class="keywords">${result.keywords}</div>
                     <div class="mnemonic">${result.mnemonic}</div>
-                    <div class="meta">ID: ${result.id} | Page: ${result.page} | JLPT: N1</div>
+                    <div class="meta">ID: ${result.id} | Page: ${result.page} | JLPT: ${formatJLPT(result.jlpt)}</div>
                 </div>
             `).join('');
 
