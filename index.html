@@ -6,17 +6,14 @@
     <title>KKLC Lookup</title>
     <style>
         html, body { 
-            height: 100%;
+            min-height: 100vh;
             margin: 0;
             padding: 0;
             font-family: system-ui;
             background: #FFFAFA;
             color: #333;
-        }
-        body {
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
         }
         .container {
             max-width: 800px;
@@ -66,6 +63,7 @@
             color: #666;
             background: #FFFAFA;
             position: relative;
+            bottom: 0;
             width: 100%;
             box-sizing: border-box;
         }
@@ -104,6 +102,28 @@
             border-top: 1px solid #eee;
             padding-top: 10px;
         }
+        .load-more {
+            display: none;
+            width: 100%;
+            padding: 12px;
+            background: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: min(16px, 4.5vw);
+            cursor: pointer;
+            margin: 20px 0;
+            transition: background 0.2s;
+        }
+        .load-more:hover {
+            background: #357abd;
+        }
+        .results-counter {
+            text-align: center;
+            color: #666;
+            margin: 10px 0;
+            font-size: min(0.9em, 4vw);
+        }
 
         @media (max-width: 480px) {
             .container {
@@ -128,10 +148,11 @@
         <input type="text" placeholder="Search by kanji, IDs, or keywords..." class="search-input" id="search">
         <div id="result">
             <div class="description">
-                Kodansha's Kanji Learner's Course (KKLC) is a comprehensive guide to mastering 2,300 kanji.
-                This tool provides quick access to kanji entries including keywords and mnemonics.
+                Kodansha's Kanji Learner's Course (KKLC) is a comprehensive guide to mastering 2,300 kanji. This tool provides quick access to kanji entries including keywords and mnemonics.
             </div>
         </div>
+        <button id="loadMore" class="load-more">Load More</button>
+        <div id="resultsCounter" class="results-counter"></div>
     </div>
 
     <div class="footer">
@@ -141,7 +162,11 @@
 
     <script>
         let kanjiData = {};
+        let currentMatches = [];
+        let currentPage = 1;
+        const itemsPerPage = 50;
 
+        // load kanji db on page load
         fetch('data.json')
             .then(response => response.json())
             .then(data => {
@@ -149,55 +174,39 @@
                 console.log('Data loaded');
             });
 
+        // determine search type (kanji, kw, ID)
         function parseQuery(query) {
             query = query.trim();
             
-            // check if it's a number-only query (IDs)
             const numberQuery = query.split(/[,\s]+/).filter(q => q);
             if (numberQuery.every(q => /^\d+$/.test(q))) {
                 return { type: 'ids', values: numberQuery };
             }
 
-            // check if it's kanji characters
             if (/[\u4e00-\u9faf]/.test(query)) {
                 return { type: 'kanji', values: query.split('') };
             }
 
-            // default to keyword search
             return { type: 'keyword', values: [query.toLowerCase()] };
         }
 
-        document.getElementById('search').addEventListener('input', (e) => {
-            const query = e.target.value;
+        // display paginated results
+        function displayResults(matches, reset = false) {
             const resultDiv = document.getElementById('result');
+            const loadMoreBtn = document.getElementById('loadMore');
+            const resultsCounter = document.getElementById('resultsCounter');
             
-            if (!query) {
-                resultDiv.innerHTML = '<div class="description">Kodansha\'s Kanji Learner\'s Course (KKLC) is a comprehensive guide to mastering 2,300 kanji.<br>This tool provides quick access to kanji entries including keywords and mnemonics.</div>';
-                return;
+            if (reset) {
+                resultDiv.innerHTML = '';
+                currentPage = 1;
             }
 
-            const searchParams = parseQuery(query);
-            let matches = [];
+            // calculates which slice of items to show
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = currentPage * itemsPerPage;
+            const displayedMatches = matches.slice(start, end);
 
-            switch (searchParams.type) {
-                case 'ids':
-                    matches = Object.values(kanjiData).filter(entry => 
-                        searchParams.values.includes(entry.id)
-                    );
-                    break;
-                
-                case 'kanji':
-                    matches = searchParams.values.map(k => kanjiData[k]).filter(Boolean);
-                    break;
-                
-                case 'keyword':
-                    matches = Object.values(kanjiData).filter(entry => 
-                        entry.keywords.toLowerCase().includes(searchParams.values[0])
-                    );
-                    break;
-            }
-
-            resultDiv.innerHTML = matches.map(result => `
+            const resultsHTML = displayedMatches.map(result => `
                 <div class="card">
                     <div class="kanji">${result.kanji}</div>
                     <div class="keywords">${result.keywords}</div>
@@ -206,9 +215,65 @@
                 </div>
             `).join('');
 
-            if (matches.length === 0) {
-                resultDiv.innerHTML = '<div class="card">No matches found</div>';
+            if (reset) {
+                resultDiv.innerHTML = resultsHTML;
+            } else {
+                resultDiv.innerHTML += resultsHTML;
             }
+
+            // updates result counter and load button visibility
+            resultsCounter.textContent = `Showing ${Math.min(end, matches.length)} of ${matches.length} results`;
+            loadMoreBtn.style.display = end < matches.length ? 'block' : 'none';
+        }
+
+        // listens for search input changes
+        document.getElementById('search').addEventListener('input', (e) => {
+            const query = e.target.value;
+            const resultDiv = document.getElementById('result');
+            
+            if (!query) {
+                resultDiv.innerHTML = '<div class="description">Kodansha\'s Kanji Learner\'s Course (KKLC) is a comprehensive guide to mastering 2,300 kanji.<br>This tool provides quick access to kanji entries including keywords and mnemonics.</div>';
+                document.getElementById('loadMore').style.display = 'none';
+                document.getElementById('resultsCounter').textContent = '';
+                currentMatches = [];
+                return;
+            }
+
+            const searchParams = parseQuery(query);
+
+            // searches based on query type
+            switch (searchParams.type) {
+                case 'ids':
+                    currentMatches = Object.values(kanjiData).filter(entry => 
+                        searchParams.values.includes(entry.id)
+                    );
+                    break;
+                
+                case 'kanji':
+                    currentMatches = searchParams.values.map(k => kanjiData[k]).filter(Boolean);
+                    break;
+                
+                case 'keyword':
+                    currentMatches = Object.values(kanjiData).filter(entry => 
+                        entry.keywords.toLowerCase().includes(searchParams.values[0])
+                    );
+                    break;
+            }
+
+            if (currentMatches.length === 0) {
+                resultDiv.innerHTML = '<div class="card">No matches found</div>';
+                document.getElementById('loadMore').style.display = 'none';
+                document.getElementById('resultsCounter').textContent = 'No results found';
+                return;
+            }
+
+            displayResults(currentMatches, true);
+        });
+
+        // loads more on click of "load more" button
+        document.getElementById('loadMore').addEventListener('click', () => {
+            currentPage++;
+            displayResults(currentMatches);
         });
     </script>
 </body>
