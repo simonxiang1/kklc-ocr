@@ -223,7 +223,14 @@
     "keywords": "ZERO, placeholder, CIRCLE MARK; \"blank\"",
     "mnemonic": "Rounding out our trio of circle characters is the non-traditional kanji 〇, long used in China but probably derived from the Indian \"0.\" It functions as a placeholder in kanji numerals, and like the letter \"O\" in English expressions such as \"room two-oh-six.\"",
     "id": "14",
-    "page": "36"
+    "page": "36",
+    "kun_readings": [
+      "ぜろ",
+      "まる"
+    ],
+    "on_readings": [
+      "レイ"
+    ]
   },
   "人": {
     "kanji": "人",
@@ -3131,7 +3138,7 @@
   "辺": {
     "kanji": "辺",
     "keywords": "VICINITY, side, BORDERLAND, outer regions",
-    "mnemonic": "Slice (刀) + motion (辶): VICINITY. To be in the VICINITY of something slices the motion required to get there. While 近 NEAR refers to a shortness of distance, 辺 VICINITY refers to the space next to something, or the “side” of something. Thus it can also refer to BORDERLANDS and outer regions, places which are by no means near.",
+    "mnemonic": "Slice (刀) + motion (⻌): VICINITY. To be in the VICINITY of something slices the motion required to get there. While 近 NEAR refers to a shortness of distance, 辺 VICINITY refers to the space next to something, or the “side” of something. Thus it can also refer to BORDERLANDS and outer regions, places which are by no means near.",
     "id": "195",
     "page": "81",
     "jlpt": 2,
