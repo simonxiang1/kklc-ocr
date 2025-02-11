@@ -256,25 +256,23 @@
             return { type: 'keyword', values: [query.toLowerCase()] };
         }
 
-        // Format readings array to display max 3 items with ellipsis if needed
+        // format readings array to display max 3 items with ellipsis if needed
         function formatReadings(readings) {
-            if (readings.length === 0) return "None";
-            
+            if (!readings || readings.length === 0) return "None";
             const displayReadings = readings.slice(0, 3);
             const hasMore = readings.length > 3;
-            
             return displayReadings.join(', ') + (hasMore ? ', ...' : '');
         }
 
-        // Convert JLPT level to display format
+        // convert JLPT level to display format
         function formatJLPT(level) {
             return level ? `N${level}` : 'N/A';
         }
 
-        // Check if a kanji entry matches the reading search
+        // check if a kanji entry matches the reading search
         function matchesReading(entry, searchTerms) {
             return searchTerms.some(term => {
-                // Check both hiragana and katakana versions against both reading types
+                // check both hiragana and katakana versions against both reading types
                 return (
                     (entry.on_readings && entry.on_readings.some(reading => 
                         reading === term.hiragana || reading === term.katakana
@@ -356,11 +354,11 @@
                         matchesReading(entry, searchParams.values)
                     );
                     break;
-                
                 case 'keyword':
-                    currentMatches = Object.values(kanjiData).filter(entry => 
-                        entry.keywords.toLowerCase().includes(searchParams.values[0])
-                    );
+                    currentMatches = Object.values(kanjiData).filter(entry => {
+                        const keywords = entry.keywords || '';
+                        return keywords.toLowerCase().includes(searchParams.values[0]);
+                    });
                     break;
             }
 
