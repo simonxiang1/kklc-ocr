@@ -156,7 +156,7 @@
             <div class="subtitle">Fast lookup for the Kodansha's Kanji Learner's Course</div>
         </div>
 
-        <input type="text" placeholder="Search by kanji, IDs, or keywords..." class="search-input" id="search">
+        <input type="text" placeholder="Search by kanji, IDs, keywords, or reading..." class="search-input" id="search">
         <div id="result">
             <div class="description">
                 Kodansha's Kanji Learner's Course (KKLC) is a comprehensive guide to mastering 2,300 kanji. This tool provides quick access to kanji entries including keywords and mnemonics.
@@ -185,7 +185,46 @@
                 console.log('Data loaded');
             });
 
-        // determine search type (kanji, kw, ID)
+        // regex patterns for character type detection
+        const patterns = {
+            kanji: /^[\u4e00-\u9faf]+$/,
+            hiragana: /^[\u3040-\u309f]+$/,
+            katakana: /^[\u30a0-\u30ff]+$/,
+            kana: /^[\u3040-\u309f\u30a0-\u30ff]+$/
+        };
+
+        // conversion maps for hiragana/katakana
+        const hiraToKata = {
+            'あ': 'ア', 'い': 'イ', 'う': 'ウ', 'え': 'エ', 'お': 'オ',
+            'か': 'カ', 'き': 'キ', 'く': 'ク', 'け': 'ケ', 'こ': 'コ',
+            'さ': 'サ', 'し': 'シ', 'す': 'ス', 'せ': 'セ', 'そ': 'ソ',
+            'た': 'タ', 'ち': 'チ', 'つ': 'ツ', 'て': 'テ', 'と': 'ト',
+            'な': 'ナ', 'に': 'ニ', 'ぬ': 'ヌ', 'ね': 'ネ', 'の': 'ノ',
+            'は': 'ハ', 'ひ': 'ヒ', 'ふ': 'フ', 'へ': 'ヘ', 'ほ': 'ホ',
+            'ま': 'マ', 'み': 'ミ', 'む': 'ム', 'め': 'メ', 'も': 'モ',
+            'や': 'ヤ', 'ゆ': 'ユ', 'よ': 'ヨ',
+            'ら': 'ラ', 'り': 'リ', 'る': 'ル', 'れ': 'レ', 'ろ': 'ロ',
+            'わ': 'ワ', 'を': 'ヲ', 'ん': 'ン',
+            'が': 'ガ', 'ぎ': 'ギ', 'ぐ': 'グ', 'げ': 'ゲ', 'ご': 'ゴ',
+            'ざ': 'ザ', 'じ': 'ジ', 'ず': 'ズ', 'ぜ': 'ゼ', 'ぞ': 'ゾ',
+            'だ': 'ダ', 'ぢ': 'ヂ', 'づ': 'ヅ', 'で': 'デ', 'ど': 'ド',
+            'ば': 'バ', 'び': 'ビ', 'ぶ': 'ブ', 'べ': 'ベ', 'ぼ': 'ボ',
+            'ぱ': 'パ', 'ぴ': 'ピ', 'ぷ': 'プ', 'ぺ': 'ペ', 'ぽ': 'ポ',
+            'ゃ': 'ャ', 'ゅ': 'ュ', 'ょ': 'ョ',
+            'っ': 'ッ', 'ー': 'ー'
+        };
+
+        const kataToHira = Object.fromEntries(
+            Object.entries(hiraToKata).map(([hira, kata]) => [kata, hira])
+        );
+
+        // convert between hiragana and katakana
+        function convertKana(text, toKatakana = true) {
+            const conversionMap = toKatakana ? hiraToKata : kataToHira;
+            return text.split('').map(char => conversionMap[char] || char).join('');
+        }
+
+        // determine search type (kanji, kana, ID)
         function parseQuery(query) {
             query = query.trim();
             
@@ -194,25 +233,57 @@
                 return { type: 'ids', values: numberQuery };
             }
 
-            if (/[\u4e00-\u9faf]/.test(query)) {
-                return { type: 'kanji', values: query.split('') };
+            // split query into individual characters/words
+            const terms = query.split(/[,、\s]+/).filter(q => q);
+
+            // check if any term contains kanji
+            if (terms.some(term => patterns.kanji.test(term))) {
+                return { type: 'kanji', values: terms.filter(term => patterns.kanji.test(term)) };
             }
 
+            // check if any term is in kana
+            if (terms.some(term => patterns.kana.test(term))) {
+                return { 
+                    type: 'reading', 
+                    values: terms.filter(term => patterns.kana.test(term)).map(term => ({
+                        hiragana: patterns.katakana.test(term) ? convertKana(term, false) : term,
+                        katakana: patterns.hiragana.test(term) ? convertKana(term, true) : term
+                    }))
+                };
+            }
+
+            // default to keyword search
             return { type: 'keyword', values: [query.toLowerCase()] };
         }
 
-        // format readings (show at most 3)
+        // Format readings array to display max 3 items with ellipsis if needed
         function formatReadings(readings) {
-            if (!Array.isArray(readings)) return 'None'
+            if (readings.length === 0) return "None";
+            
             const displayReadings = readings.slice(0, 3);
             const hasMore = readings.length > 3;
             
             return displayReadings.join(', ') + (hasMore ? ', ...' : '');
         }
 
-        // format JLPT level (none if none)
+        // Convert JLPT level to display format
         function formatJLPT(level) {
             return level ? `N${level}` : 'N/A';
+        }
+
+        // Check if a kanji entry matches the reading search
+        function matchesReading(entry, searchTerms) {
+            return searchTerms.some(term => {
+                // Check both hiragana and katakana versions against both reading types
+                return (
+                    (entry.on_readings && entry.on_readings.some(reading => 
+                        reading === term.hiragana || reading === term.katakana
+                    )) ||
+                    (entry.kun_readings && entry.kun_readings.some(reading => 
+                        reading === term.hiragana || reading === term.katakana
+                    ))
+                );
+            });
         }
 
         // display paginated results
@@ -226,7 +297,6 @@
                 currentPage = 1;
             }
 
-            // calculates which slice of items to show
             const start = (currentPage - 1) * itemsPerPage;
             const end = currentPage * itemsPerPage;
             const displayedMatches = matches.slice(start, end);
@@ -250,7 +320,6 @@
                 resultDiv.innerHTML += resultsHTML;
             }
 
-            // updates result counter and load button visibility
             resultsCounter.textContent = `Showing ${Math.min(end, matches.length)} of ${matches.length} results`;
             loadMoreBtn.style.display = end < matches.length ? 'block' : 'none';
         }
@@ -282,6 +351,12 @@
                     currentMatches = searchParams.values.map(k => kanjiData[k]).filter(Boolean);
                     break;
                 
+                case 'reading':
+                    currentMatches = Object.values(kanjiData).filter(entry => 
+                        matchesReading(entry, searchParams.values)
+                    );
+                    break;
+                
                 case 'keyword':
                     currentMatches = Object.values(kanjiData).filter(entry => 
                         entry.keywords.toLowerCase().includes(searchParams.values[0])
@@ -305,5 +380,6 @@
             displayResults(currentMatches);
         });
     </script>
+    
 </body>
 </html>
