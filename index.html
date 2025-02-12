@@ -225,7 +225,7 @@
             const conversionMap = toKatakana ? hiraToKata : kataToHira;
             return text.split('').map(char => conversionMap[char] || char).join('');
         }
-
+        
         // determine search type (kanji, kana, ID)
         function parseQuery(query) {
             query = query.trim();
@@ -237,10 +237,17 @@
 
             // split query into individual characters/words
             const terms = query.split(/[,、\s]+/).filter(q => q);
+            
+            // extract all kanji characters from the terms
+            const kanjiChars = terms.reduce((chars, term) => {
+                // split term into individual characters and filter for kanji
+                const termKanji = term.split('').filter(char => patterns.kanji.test(char));
+                return [...chars, ...termKanji];
+            }, []);
 
-            // check if any term contains kanji
-            if (terms.some(term => patterns.kanji.test(term))) {
-                return { type: 'kanji', values: terms.filter(term => patterns.kanji.test(term)) };
+            // return any kanji characters found
+            if (kanjiChars.length > 0) {
+                return { type: 'kanji', values: kanjiChars };
             }
 
             // check if any term is in kana
